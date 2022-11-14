@@ -77,8 +77,15 @@ macro(bh_add_test name src)
     target_include_directories(${name} PUBLIC "${ADDITIONAL_INCLUDE_DIRS}")
 endmacro()
 
+macro(bh_add_exec name src)
+    add_executable(${name} ${src})
+    target_link_libraries(${name} PUBLIC "${ADDITIONAL_LIBRARIES}")
+    target_include_directories(${name} PUBLIC "${ADDITIONAL_INCLUDE_DIRS}")
+endmacro()
+
 bh_add_test(matrix_test include/blackhole/matrix_test.cc)
-bh_add_test(camera_test include/blackhole/camera_test.cc)
+bh_add_exec(camera_test include/blackhole/camera_test.cc)
 bh_add_test(object_test include/blackhole/object_test.cc)
+bh_add_test(utility_test include/blackhole/utility_test.cc)
 
 

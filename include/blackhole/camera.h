@@ -6,6 +6,7 @@
 #define BLACKHOLE_CAMERA_H_
 
 #include <cmath>
+#include <limits>
 #include <type_traits>
 
 #include "opencv2/opencv.hpp"
@@ -24,36 +25,20 @@ class Camera {
   using matrix_type = cv::Matx<value_type, 3, 3>;
 
   Camera(int width, int height, double fov_x)
-    : width_(width), height_(height),
-      focus_len_(width / (2 * std::tan(fov_x / 2.0))),
-      fov_(fov_x)
+    : width_(width), height_(height)
   {
-    fv_ = xv_ * focus_len_;
+    fov(fov_x);
   }
 
-//  void Resize(int width, int height) {
-//    width_ = width;
-//    height_ = height;
-//  }
-
-//  void Resize(int width, int height, value_type fov) {
-//
-//  }
-
-//  void fov(value_type fov_x) {
-//    fov_ = fov_x;
-//    focus_len_ = width() / (2 * std::tan(fov_x / 2.0));
-//    focus_ = focus_ * (focus_len_ / focus_.dot(focus_));
-//  }
-
+  void fov(value_type fov_x) {
+    fov_x = std::min(std::max((value_type)0, fov_x), std::nextafter(blackhole::kPi<value_type>, (value_type)0));
+    fov_ = fov_x;
+    focus_len_ = width() / (2 * std::tan(fov_x / 2.0));
+    fv_ = xv_ * focus_len_;
+  }
   [[nodiscard]] value_type fov() const { return fov_; }
 
-//  void ResizeX()
-
-//  void width(int val) { }
   [[nodiscard]] int width() const { return width_; }
-
-//  void height(int val) { }
   [[nodiscard]] int height() const { return height_; }
 
   [[nodiscard]] const point_type& position() const { return origin_; }
@@ -138,18 +123,11 @@ class Camera {
     zp_     += zv_ * distance;
   }
 
-//  void LookAt(double x, double y, double z) {
-//    const auto v = cv::normalize(vector_type(x, y, z));
-//    xp_ = origin_ + v * xv_;
-//    yp_ = origin_ + v * yv_;
-//    zp_ = origin_ + v * zv_;
-//  }
-
  private:
   int width_, height_;
-  Vector<value_type, 2> pixel_size_{1, 1};
+//  Vector<value_type, 2> pixel_size_{1, 1};
 
-  point_type origin_ = {0, 0, 0};
+  point_type origin_ = {0, 0, 0}; // a.k.a. focus point
   point_type xp_ = {1, 0, 0};
   point_type yp_ = {0, -1, 0};
   point_type zp_ = {0, 0, -1};
@@ -158,9 +136,8 @@ class Camera {
   vector_type yv_ = yp_ - origin_;
   vector_type zv_ = zp_ - origin_;
 
-  value_type focus_len_;
-  value_type fov_;
-//  point_type fp_ = {0, 0, 0};
+  value_type focus_len_ = 1;
+  value_type fov_ = pi / 2;
   vector_type fv_ = xv_;
 };
 

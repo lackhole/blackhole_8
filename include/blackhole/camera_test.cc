@@ -44,7 +44,7 @@ int main() {
   constexpr const int kScreenHeight = 900;
 
   blackhole::Camera camera(kScreenWidth, kScreenHeight, blackhole::pi / 2);
-  camera.Move(0, 0, 10);
+  camera.MoveTo(0, 0, 10);
 
   cv::Mat screen1(kScreenHeight, kScreenWidth, CV_8UC3);
   cv::Mat screen2(kScreenHeight, kScreenWidth, CV_8UC3);
@@ -83,9 +83,10 @@ int main() {
       cv.wait(lck, [&](){ return !clean; });
     }
 
+    const auto fv = camera.focus_vector();
     for (int x = 0; x < kScreenWidth; ++x) {
       for (int y = 0; y < kScreenHeight; ++y) {
-        const auto pv = camera.PixelVector(x, y);
+        const auto pv = camera.PixelVector(x, y, fv);
         const auto pv2 = cv::normalize(pv) * 100000; // rough end of a ray
 
         if (camera.position()[2] == 0)
@@ -139,11 +140,11 @@ int main() {
 
     cv::putText(*screen, "Position: " + ss.str(), {0, 10}, cv::FONT_HERSHEY_PLAIN, 1, {0, 255, 0}, 1);
 
-    ss.str(""); ss << camera.VectorX();
+    ss.str(""); ss << camera.vector_x();
     cv::putText(*screen, "VectorX: " + ss.str(), {0, 25}, cv::FONT_HERSHEY_PLAIN, 1, {0, 255, 0}, 1);
-    ss.str(""); ss << camera.VectorY();
+    ss.str(""); ss << camera.vector_y();
     cv::putText(*screen, "VectorY: " + ss.str(), {0, 40}, cv::FONT_HERSHEY_PLAIN, 1, {0, 255, 0}, 1);
-    ss.str(""); ss << camera.VectorZ();
+    ss.str(""); ss << camera.vector_z();
     cv::putText(*screen, "VectorZ: " + ss.str(), {0, 55}, cv::FONT_HERSHEY_PLAIN, 1, {0, 255, 0}, 1);
     ss.str(""); ss << camera.fov() * 180.0 / blackhole::pi << " deg";
     cv::putText(*screen, "FoV: " + ss.str(), {0, 70}, cv::FONT_HERSHEY_PLAIN, 1, {0, 255, 0}, 1);
@@ -163,41 +164,41 @@ int main() {
     const auto faster = 10;
 
     switch (key) {
-      case 'w': camera.MoveForward(move_d); break;
-      case 'W': camera.MoveForward(move_d * faster); break;
+      case 'w': camera.MoveX(move_d); break;
+      case 'W': camera.MoveX(move_d * faster); break;
 
-      case 's': camera.MoveForward(-move_d); break;
-      case 'S': camera.MoveForward(-move_d * faster); break;
+      case 's': camera.MoveX(-move_d); break;
+      case 'S': camera.MoveX(-move_d * faster); break;
 
-      case 'a': camera.MoveSideways(-move_d); break;
-      case 'A': camera.MoveSideways(-move_d * faster); break;
+      case 'a': camera.MoveY(-move_d); break;
+      case 'A': camera.MoveY(-move_d * faster); break;
 
-      case 'd': camera.MoveSideways(move_d); break;
-      case 'D': camera.MoveSideways(move_d * faster); break;
+      case 'd': camera.MoveY(move_d); break;
+      case 'D': camera.MoveY(move_d * faster); break;
 
-      case 'z': camera.MoveVertical(-move_d); break;
-      case 'Z': camera.MoveVertical(-move_d * faster); break;
+      case 'z': camera.MoveZ(-move_d); break;
+      case 'Z': camera.MoveZ(-move_d * faster); break;
 
-      case 'x': camera.MoveVertical(move_d); break;
-      case 'X': camera.MoveVertical(move_d * faster); break;
+      case 'x': camera.MoveZ(move_d); break;
+      case 'X': camera.MoveZ(move_d * faster); break;
 
-      case 'q': camera.RotateSelf(-rotate_d); break;
-      case 'Q': camera.RotateSelf(-rotate_d * faster); break;
+      case 'q': camera.RotateX(-rotate_d); break;
+      case 'Q': camera.RotateX(-rotate_d * faster); break;
 
-      case 'e': camera.RotateSelf(rotate_d); break;
-      case 'E': camera.RotateSelf(rotate_d * faster); break;
+      case 'e': camera.RotateX(rotate_d); break;
+      case 'E': camera.RotateX(rotate_d * faster); break;
 
-      case 'i': camera.RotateVertically(rotate_d); break;
-      case 'I': camera.RotateVertically(rotate_d * faster); break;
+      case 'i': camera.RotateY(rotate_d); break;
+      case 'I': camera.RotateY(rotate_d * faster); break;
 
-      case 'k': camera.RotateVertically(-rotate_d); break;
-      case 'K': camera.RotateVertically(-rotate_d * faster); break;
+      case 'k': camera.RotateY(-rotate_d); break;
+      case 'K': camera.RotateY(-rotate_d * faster); break;
 
-      case 'j': camera.RotateHorizontally(-rotate_d); break;
-      case 'J': camera.RotateHorizontally(-rotate_d * faster); break;
+      case 'j': camera.RotateZ(-rotate_d); break;
+      case 'J': camera.RotateZ(-rotate_d * faster); break;
 
-      case 'l': camera.RotateHorizontally(rotate_d); break;
-      case 'L': camera.RotateHorizontally(rotate_d * faster); break;
+      case 'l': camera.RotateZ(rotate_d); break;
+      case 'L': camera.RotateZ(rotate_d * faster); break;
 
       case '-': camera.fov(camera.fov() - blackhole::pi / 54); break;
       case '+': camera.fov(camera.fov() + blackhole::pi / 54); break;

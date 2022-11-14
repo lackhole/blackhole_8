@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+#include "opencv2/opencv.hpp"
+
 namespace blackhole {
 
 template<typename T, size_t N>
@@ -335,6 +337,22 @@ template<typename T, size_t m>
 Vector<T, m> normalize(const Vector<T, m>& v) {
   auto s = v.dot(v);
   return v * (1.0 / s);
+}
+
+template<typename Matrix, typename Vec>
+static Matrix RotationMatrixForAxis(const Vec& v, double theta) {
+  const auto u = cv::normalize(v);
+  const auto ux = u[0];
+  const auto uy = u[1];
+  const auto uz = u[2];
+  const auto c = std::cos(theta);
+  const auto c2 = 1 - c;
+  const auto s = std::sin(theta);
+  return Matrix(
+    c + ux*ux*c2, ux*uy*c2 - uz*s, ux*uz*c2 + uy*s,
+    uy*ux*c2 + uz*s, c + uy*uy*c2, uy*uz*c2 - ux*s,
+    uz*ux*c2 - uy*s, uz*uy*c2 + ux*s, c + uz*uz*c2
+  );
 }
 
 } // namespace blackhole

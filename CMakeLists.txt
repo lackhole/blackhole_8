@@ -85,7 +85,9 @@ endmacro()
 
 bh_add_test(matrix_test include/blackhole/matrix_test.cc)
 bh_add_exec(camera_test include/blackhole/camera_test.cc)
-bh_add_test(object_test include/blackhole/object_test.cc)
+bh_add_test(object_test include/blackhole/object/object_test.cc)
 bh_add_test(utility_test include/blackhole/utility_test.cc)
+bh_add_test(vector_object_test include/blackhole/object/vector_object_test.cc)
+bh_add_test(ray_tracer_test include/blackhole/ray_tracer_test.cc)
 
 

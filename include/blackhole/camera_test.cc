@@ -11,6 +11,8 @@
 
 #include "blackhole/camera.h"
 #include "blackhole/cv_key.h"
+#include "blackhole/object.h"
+#include "blackhole/object/object_manager.h"
 
 #include "opencv2/opencv.hpp"
 
@@ -44,7 +46,29 @@ int main() {
   constexpr const int kScreenHeight = 900;
 
   blackhole::Camera camera(kScreenWidth, kScreenHeight, blackhole::pi / 2);
-  camera.MoveTo(0, 0, 10);
+  camera.MoveTo(80, 120, 10);
+
+
+  cv::VideoWriter out_capture("/Users/yonggyulee/video.avi",
+                              cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 29, cv::Size(kScreenWidth, kScreenHeight), true);
+
+  auto& manager = blackhole::ObjectManager<double>::GetInstance();
+
+  manager.InsertObject<blackhole::Rectangle<double>>(
+    100, 253, 199,
+    100, 0, 199,
+    100, 0, 0,
+    100, 253, 0
+  ).second->SetTexture(cv::imread("/Users/yonggyulee/mooni.jpeg"));
+
+  manager.InsertObject<blackhole::Rectangle<double>>(
+    100, 0, 300,
+    100, -200, 300,
+    100, -200, 0,
+    100, 0, 0
+  ).second->SetTexture(cv::imread("/Users/yonggyulee/karina.jpeg"));
+
+  manager.InsertObject<blackhole::InfinitePlane<double>>(cv::Vec3d(0,0,0), blackhole::ChessPattern2D<double>{10});
 
   cv::Mat screen1(kScreenHeight, kScreenWidth, CV_8UC3);
   cv::Mat screen2(kScreenHeight, kScreenWidth, CV_8UC3);
@@ -89,49 +113,14 @@ int main() {
         const auto pv = camera.PixelVector(x, y, fv);
         const auto pv2 = cv::normalize(pv) * 100000; // rough end of a ray
 
-        if (camera.position()[2] == 0)
+        cv::Vec3d inter;
+        if (const auto obj = manager.FindCollision(camera.focus(), pv2, &inter); obj != nullptr) {
+          auto c = obj->color(inter);
+          screen->data[(y * kScreenWidth + x) * 3] = c[0];
+          screen->data[(y * kScreenWidth + x) * 3 + 1] = c[1];
+          screen->data[(y * kScreenWidth + x) * 3 + 2] = c[2];
           continue;
-
-        bool do_collide_with_xy = (camera.focus()[2] * pv2[2]) < 0;
-        if (do_collide_with_xy) {
-          const auto c1 = std::abs((camera.focus())[2]);
-          const auto c2 = std::abs(pv2[2]);
-          const auto pq = pv2 - (camera.focus());
-          const auto cm = (camera.focus()) + (c1 / (c1 + c2)) * pq;
-
-          const auto x2 = cm[0];
-          const auto y2 = cm[1];
-
-          auto mod_20 = [] (auto x) {
-            auto x2 = std::abs(x);
-            return x2 - ((int)(x2) / 20) * 20;
-          };
-
-          if (x2 * y2 > 0) { // same
-            const auto x3 = mod_20(x2); // std::abs(x2) % 20;
-            const auto y3 = mod_20(y2); // std::abs(y2) % 20;
-
-            if ((x3 <= 10 && y3 <= 10) or (10 <= x3 && 10 <= y3)) {
-              screen->data[(y * kScreenWidth + x) * 3] = 255;
-              screen->data[(y * kScreenWidth + x) * 3 + 1] = 255;
-              screen->data[(y * kScreenWidth + x) * 3 + 2] = 255;
-            } else {
-              // black
-            }
-          } else { // different
-            const auto x3 = mod_20(x2); // std::abs(x2) % 20;
-            const auto y3 = mod_20(y2); // std::abs(y2) % 20;
-            if ((x3 <= 10 && y3 <= 10) or (10 <= x3 && 10 <= y3)) {
-              // black
-            } else {
-              screen->data[(y * kScreenWidth + x) * 3] = 255;
-              screen->data[(y * kScreenWidth + x) * 3 + 1] = 255;
-              screen->data[(y * kScreenWidth + x) * 3 + 2] = 255;
-            }
-          }
         }
-
-
       }
     }
 
@@ -139,7 +128,6 @@ int main() {
     ss << camera.focus();
 
     cv::putText(*screen, "Position: " + ss.str(), {0, 10}, cv::FONT_HERSHEY_PLAIN, 1, {0, 255, 0}, 1);
-
     ss.str(""); ss << camera.vector_x();
     cv::putText(*screen, "VectorX: " + ss.str(), {0, 25}, cv::FONT_HERSHEY_PLAIN, 1, {0, 255, 0}, 1);
     ss.str(""); ss << camera.vector_y();
@@ -155,6 +143,7 @@ int main() {
       clean = true;
     }
     cv.notify_one();
+    out_capture.write(*buf);
     cv::imshow("Window", *buf);
     int key = cv::waitKeyEx(0);
     if (key == blackhole::kEscape) break;

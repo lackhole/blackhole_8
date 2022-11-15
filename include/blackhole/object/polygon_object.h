@@ -1,0 +1,8 @@
+//
+// Created by YongGyu Lee on 2022/11/15.
+//
+
+#ifndef BLACKHOLE_POLYGON_OBJECT_H_
+#define BLACKHOLE_POLYGON_OBJECT_H_
+
+#endif // BLACKHOLE_POLYGON_OBJECT_H_

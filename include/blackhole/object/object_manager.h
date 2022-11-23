@@ -52,6 +52,15 @@ class ObjectManager {
     return InsertObject(std::make_unique<U>(std::forward<Args>(args)...));
   }
 
+  template<template <typename> class U, typename ...Args, std::enable_if_t<
+    std::conjunction_v<
+      std::is_base_of<object_type, U<value_type>>,
+      std::is_constructible<U<value_type>, Args&&...>
+    >, int> = 0>
+  std::pair<const key_type, U<value_type>*> InsertObject(Args&&... args) {
+    return InsertObject(std::make_unique<U<value_type>>(std::forward<Args>(args)...));
+  }
+
 //  auto FindObject(int key) {
 //
 //  }

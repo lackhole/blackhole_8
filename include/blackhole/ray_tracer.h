@@ -14,11 +14,6 @@
 
 namespace blackhole {
 
-template<typename V>
-auto size(const V& v) {
-  return std::sqrt(v.dot(v));
-}
-
 template<typename Point>
 class BasicLinearRayRecurrence {
  public:
@@ -40,17 +35,33 @@ class BasicLinearRayRecurrence {
 };
 
 template<typename Point>
+class FixedSingleBlackholeRayRecurrence {
+ public:
+  using point_type = Point;
+  FixedSingleBlackholeRayRecurrence(
+    const point_type& bh_pos, double mass,
+    const point_type& old, const point_type& present)
+    : points_(old, present) {}
+
+ private:
+  std::pair<point_type, point_type> points_;
+  point_type blackhole_;
+  double blackhole_mass_;
+};
+
+template<typename Point>
 class RayTracer {
  public:
   using point_type = Point;
   using value_type = typename point_type::value_type;
+  using recurrence_type = std::function<point_type(const point_type& old, const point_type& present)>;
 
   RayTracer(const point_type& old, const point_type& present)
     : point_(old, present), recurrence_(BasicLinearRayRecurrence{old, present})
   {}
 
   RayTracer(const point_type& old, const point_type& present,
-            std::function<value_type()> recurrence)
+            recurrence_type recurrence)
     : point_(old, present), recurrence_(std::move(recurrence))
   {}
 
@@ -81,11 +92,11 @@ class RayTracer {
   point_type& present() { return point_.second; }
 
   std::pair<point_type, point_type> point_; // old, present
-  std::function<point_type(const point_type& first, const point_type& second)> recurrence_;
+  recurrence_type recurrence_;
 };
 
 template<typename Point>
-RayTracer(const Point&) -> RayTracer<Point>;
+RayTracer(const Point&, ...) -> RayTracer<Point>;
 
 } // namespace blackhole
 

@@ -10,6 +10,7 @@
 #include <condition_variable>
 
 #include "blackhole/camera.h"
+#include "blackhole/config.h"
 #include "blackhole/cv_key.h"
 #include "blackhole/object.h"
 #include "blackhole/object/object_manager.h"
@@ -49,7 +50,12 @@ int main() {
   camera.MoveTo(80, 120, 10);
 
 
-  cv::VideoWriter out_capture("/Users/yonggyulee/video.avi",
+  namespace fs = std::filesystem;
+  namespace bh = blackhole;
+
+  const auto save_dir = bh::timed_output_dir();
+  fs::create_directories(save_dir);
+  cv::VideoWriter out_capture(save_dir/"video.avi",
                               cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 29, cv::Size(kScreenWidth, kScreenHeight), true);
 
   auto& manager = blackhole::ObjectManager<double>::GetInstance();
@@ -59,14 +65,14 @@ int main() {
     100, 0, 199,
     100, 0, 0,
     100, 253, 0
-  ).second->SetTexture(cv::imread("/Users/yonggyulee/mooni.jpeg"));
+  ).second->SetTexture(bh::resource_image("mooni.jpeg"));
 
   manager.InsertObject<blackhole::Rectangle<double>>(
     100, 0, 300,
     100, -200, 300,
     100, -200, 0,
     100, 0, 0
-  ).second->SetTexture(cv::imread("/Users/yonggyulee/karina.jpeg"));
+  ).second->SetTexture(bh::resource_image("karina.jpeg"));
 
   manager.InsertObject<blackhole::InfinitePlane<double>>(cv::Vec3d(0,0,0), blackhole::ChessPattern2D<double>{10});
 

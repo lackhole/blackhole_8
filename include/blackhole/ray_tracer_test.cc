@@ -11,6 +11,7 @@
 #include <condition_variable>
 
 #include "blackhole/camera.h"
+#include "blackhole/config.h"
 #include "blackhole/cv_key.h"
 #include "blackhole/object.h"
 #include "blackhole/object/object_manager.h"
@@ -49,7 +50,13 @@ int main() {
   blackhole::Camera<double> camera(kScreenWidth, kScreenHeight, blackhole::pi / 2);
   camera.MoveTo(-200, 120, 10);
 
-  cv::VideoWriter out_capture("/Users/yonggyulee/video2.avi",
+
+  namespace fs = std::filesystem;
+  namespace bh = blackhole;
+
+  const auto save_dir = bh::timed_output_dir();
+  fs::create_directories(save_dir);
+  cv::VideoWriter out_capture(save_dir/"video.avi",
                               cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 29, cv::Size(kScreenWidth, kScreenHeight), true);
 
   auto& manager = blackhole::ObjectManager<double>::GetInstance();
@@ -60,7 +67,7 @@ int main() {
     100, 0, 0,
     100, 253, 0
   );
-  id.second->SetTexture(cv::imread("/Users/yonggyulee/mooni.jpeg"));
+  id.second->SetTexture(bh::resource_image("mooni.jpeg"));
   id.second->name("Mooni");
 
   auto id2 = manager.InsertObject<blackhole::Rectangle<double>>(
@@ -69,7 +76,7 @@ int main() {
     100, -200, 0,
     100, 0, 0
   );
-  id2.second->SetTexture(cv::imread("/Users/yonggyulee/karina.jpeg"));
+  id2.second->SetTexture(bh::resource_image("karina.jpeg"));
   id2.second->name("Karina");
 
   auto id3 = manager.InsertObject<blackhole::Rectangle<double>>(
@@ -78,7 +85,7 @@ int main() {
     -100, -50, 0,
     -100, 50, 0
   );
-  id3.second->SetTexture(cv::imread("/Users/yonggyulee/winter.jpg"));
+  id3.second->SetTexture(bh::resource_image("winter.jpg"));
   id3.second->name("Winter");
 
   manager.InsertObject<blackhole::InfinitePlane<double>>(cv::Vec3d(0,0,0), blackhole::ChessPattern2D<double>{10});

@@ -45,7 +45,7 @@ int main() {
   constexpr const int kScreenWidth = 1600;
   constexpr const int kScreenHeight = 900;
 
-  blackhole::Camera camera(kScreenWidth, kScreenHeight, blackhole::pi / 2);
+  blackhole::Camera<double> camera(kScreenWidth, kScreenHeight, blackhole::pi / 2);
   camera.MoveTo(80, 120, 10);
 
 

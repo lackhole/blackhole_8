@@ -9,6 +9,7 @@
 
 #include "blackhole/object/object.h"
 #include "blackhole/object/material.h"
+#include "blackhole/math.h"
 #include "blackhole/utility.h"
 
 namespace blackhole {
@@ -90,6 +91,12 @@ class Rectangle : public DrawableObject<T> {
     {-1, 0, -1},
     {1, 0, -1}}) {}
 
+  Rectangle(const point_type& p1,
+            const point_type& p2,
+            const point_type& p3,
+            const point_type& p4)
+  : object({p1, p2, p3, p4}) {}
+
   Rectangle(
     value_type v11, value_type v12, value_type v13,
     value_type v21, value_type v22, value_type v23,
@@ -149,7 +156,7 @@ class Rectangle : public DrawableObject<T> {
 //    return true;
   }
 
-  cv::Vec3b color(double x, double y, double z) const override {
+  cv::Vec3b color(value_type x, value_type y, value_type z) const override {
     return color({x, y, z});
   }
 
@@ -217,7 +224,7 @@ class InfinitePlane : public DrawableObject<T> {
     return true;
   }
 
-  [[nodiscard]] cv::Vec3b color(double x, double y, double z) const override {
+  [[nodiscard]] cv::Vec3b color(value_type x, value_type y, value_type z) const override {
     const auto b = (vector_x()[0] * y - vector_x()[1] * x) /
         (vector_x()[0] * vector_y()[1] - vector_x()[1] * vector_y()[0]);
     const auto a = (x - b * vector_y()[0]) / vector_x()[0];
@@ -226,11 +233,127 @@ class InfinitePlane : public DrawableObject<T> {
 
  private:
   using object::object;
-  using Material::SetTexture;
+  using Material<value_type>::SetTexture;
   std::function<cv::Vec3b(value_type x, value_type y, value_type z)> pattern_
     = [](auto...) -> cv::Vec3b { return {0,0,0}; };
 };
 
+template<typename T>
+class Cylinder : public DrawableObject<T> {
+ public:
+
+
+ private:
+};
+
+template<typename T>
+class InfiniteCylinder : public DrawableObject<T> {
+ public:
+//  InfiniteCylinder()
+
+ private:
+};
+
+template<typename T>
+class Sphere : public DrawableObject<T> {
+ public:
+  using object = DrawableObject<T>;
+  using value_type = typename object::value_type;
+  using point_type = typename object::point_type;
+  using vector_type = typename object::vector_type;
+  using matrix_type = typename object::matrix_type;
+
+  using object::position;
+
+  Sphere(const point_type& position, value_type radius)
+    : object(position), radius_(radius) {}
+
+  void radius(value_type r) { radius_ = r; }
+  value_type radius() const { return radius_; }
+
+  cv::Vec3b color(value_type x, value_type y, value_type z) const override {
+    return Material<value_type>::color(x, y, z);
+
+  }
+
+  const point_type& center() const { return position(); }
+
+  bool Collide(const point_type& p1, const point_type& p2, point_type *intersection) const override {
+    const auto d1 = math::size(p1 - center());
+    const auto d2 = math::size(p2 - center());
+
+    if (d1 < radius() && d2 > radius())
+      return false;
+    if (d2 < radius() && d1 > radius())
+      return false;
+
+//    if((d1 - radius()) * (d2 - radius()) < 0) {
+//      return true;
+//    }
+//    else if (d1 < radius && d2 < radius)
+//      return false;
+//    double d = distanceBetweenLineSegmentAndPoint(p1, p2, pos);
+//    if(d >= 0 && d <= radius)
+//      return true;
+//    else
+//      return false;
+  }
+
+ private:
+  value_type radius_ = 10;
+};
+
+template<typename T>
+class Annulus : public Rectangle<T> {
+ public:
+  using object = Rectangle<T>;
+  using value_type = typename object::value_type;
+  using point_type = typename object::point_type;
+  using vector_type = typename object::vector_type;
+  using matrix_type = typename object::matrix_type;
+
+  using object::vector_x;
+  using object::vector_y;
+  using object::vector_z;
+  using object::position;
+
+  Annulus(const point_type& p1,
+          const point_type& p2,
+          const point_type& p3,
+          const point_type& p4,
+          value_type r_outer, value_type r_inner)
+    : object(p1, p2, p3, p4), norm_(cv::normalize((p3 - p1).cross(p2 - p1))), r_inner_(r_inner), r_outer_(r_outer)
+  {}
+
+  bool Collide(const point_type& q1, const point_type& q2, point_type *intersection) const override {
+    const auto p1 = q1 - center();
+    const auto p2 = q2 - center();
+
+    if (norm().dot(p1) * norm().dot(p2) >= 0)
+      return false;
+
+    const auto t1 = norm().dot(p1);
+    const auto t2 = norm().dot(p2);
+    const auto c = (std::abs(t2) * p1 + std::abs(t1) * p2) / (std::abs(t1) + std::abs(t2));
+
+    if (std::sqrt(c.dot(c)) > r_outer_)
+      return false;
+
+    if (std::sqrt(c.dot(c)) < r_inner_)
+      return false;
+
+    *intersection = c + center();
+    return true;
+  }
+
+  const point_type& center() const { return this->vertex()[0]; }
+  const vector_type & norm() const { return norm_; }
+
+ private:
+  vector_type norm_;
+  value_type r_outer_;
+  value_type r_inner_;
+};
 
 } // namespace blackhole
 

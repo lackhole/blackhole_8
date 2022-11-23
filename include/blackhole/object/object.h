@@ -108,7 +108,7 @@ class Object {
 };
 
 template<typename T>
-class DrawableObject : public Object<T>, public Material {
+class DrawableObject : public Object<T>, public Material<T> {
  public:
   using object = Object<T>;
   using value_type = typename object::value_type;
@@ -117,7 +117,7 @@ class DrawableObject : public Object<T>, public Material {
   using matrix_type = typename object::matrix_type;
 
   using object::object;
-  using Material::color;
+  using Material<T>::color;
 
   virtual bool Collide(const point_type& p1, const point_type& p2, point_type* intersection) const { return false; }
 };

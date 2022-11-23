@@ -15,9 +15,11 @@
 
 namespace blackhole {
 
+template<typename T>
 class Material {
  public:
-  using function_type = std::function<cv::Scalar(double x, double y, double z)>;
+  using value_type = T;
+  using function_type = std::function<cv::Scalar(value_type x, value_type y, value_type z)>;
   using texture_type = cv::Mat;
   using color_type = cv::Scalar;
 
@@ -49,7 +51,7 @@ class Material {
 //    }, material_);
 //  }
 
-  virtual cv::Vec3b color(double x, double y, double z) const { return {0, 0, 0}; }
+  virtual cv::Vec3b color(value_type x, value_type y, value_type z) const { return {0, 0, 0}; }
 
   template<typename P>
   cv::Vec3b color(const P& p) const { return color(p[0], p[1], p[2]); }

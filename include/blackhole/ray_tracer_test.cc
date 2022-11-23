@@ -21,70 +21,6 @@
 #if defined(BH_USE_OPENCL)
 #if defined(__APPLE__) || defined(__MACOSX)
 #include "OpenCL/cl.h"
-//
-//#include "ApplicationServices/ApplicationServices.h"
-//
-//CGEventRef myCGEventCallback(CGEventTapProxy proxy, CGEventType type,
-//                             CGEventRef event, void *refcon)
-//{
-//  static CGPoint prev = CGEventGetLocation(event);
-//  if (type != kCGEventMouseMoved)
-//  {
-//    return event;
-//  }
-//
-//  CGPoint location = CGEventGetLocation(event);
-//  if (location.x == prev.x && location.y == prev.y)
-//    return event;
-//  prev.x = location.x;
-//  prev.y = location.y;
-//  std::cout << location.x << ", " << location.y << '\n';
-//  CGWarpMouseCursorPosition({100, 100});
-//  return event;
-//}
-//
-//int RunEvents() {
-//  std::thread([]() {
-//    CGRect screenBounds = CGDisplayBounds(CGMainDisplayID());
-//    printf(
-//      "The main screen is %dx%d\n",
-//      (int) screenBounds.size.width,
-//      (int) screenBounds.size.height);
-//
-//    CFMachPortRef eventTap = CGEventTapCreate(
-//      kCGSessionEventTap,
-//      kCGHeadInsertEventTap,
-//      kCGEventTapOptionDefault,
-//      (1 << kCGEventMouseMoved),
-//      myCGEventCallback,
-//      NULL);
-//
-//    if (!eventTap) {
-//      fprintf(stderr, "failed to create event tap\n");
-//      exit(1);
-//    }
-//
-////    CGEventRef event = CGEventCreate(NULL);
-////    CGPoint cursor = CGEventGetLocation(event);
-////    CFRelease(event);
-//
-//    CFRunLoopSourceRef runLoopSource = CFMachPortCreateRunLoopSource(
-//      kCFAllocatorDefault,
-//      eventTap,
-//      0);
-//    CFRunLoopAddSource(
-//      CFRunLoopGetCurrent(),
-//      runLoopSource,
-//      kCFRunLoopCommonModes);
-//
-//    CGEventTapEnable(eventTap, true);
-//    CFRunLoopRun();
-//  }).detach();
-//  return 1;
-//}
-//
-//static int x = RunEvents();
-
 #else
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
     #include <CL/cl.h>
@@ -110,7 +46,7 @@ int main() {
   constexpr const int kScreenWidth = 1600;
   constexpr const int kScreenHeight = 900;
 
-  blackhole::Camera camera(kScreenWidth, kScreenHeight, blackhole::pi / 2);
+  blackhole::Camera<double> camera(kScreenWidth, kScreenHeight, blackhole::pi / 2);
   camera.MoveTo(-200, 120, 10);
 
   cv::VideoWriter out_capture("/Users/yonggyulee/video2.avi",
@@ -145,7 +81,7 @@ int main() {
   id3.second->SetTexture(cv::imread("/Users/yonggyulee/winter.jpg"));
   id3.second->name("Winter");
 
-  manager.InsertObject<blackhole::InfinitePlane<double>>(cv::Vec3d(0,0,0), ChessPattern2D<double>{10});
+  manager.InsertObject<blackhole::InfinitePlane<double>>(cv::Vec3d(0,0,0), blackhole::ChessPattern2D<double>{10});
 
   cv::Mat screen1(kScreenHeight, kScreenWidth, CV_8UC3);
   cv::Mat screen2(kScreenHeight, kScreenWidth, CV_8UC3);
@@ -200,20 +136,7 @@ int main() {
           if (key != -1) goto kGOTO_LOOP_END;
         }
 #endif
-
         if (b) continue;
-
-//        const auto pv = camera.PixelVector(x, y, fv);
-//        const auto pv2 = cv::normalize(pv) * 100000; // rough end of a ray
-//
-//        cv::Vec3d inter;
-//        if (const auto obj = manager.FindCollision(camera.focus(), pv2, &inter); obj != nullptr) {
-//          auto c = obj->color(inter);
-//          screen->data[(y * kScreenWidth + x) * 3] = c[0];
-//          screen->data[(y * kScreenWidth + x) * 3 + 1] = c[1];
-//          screen->data[(y * kScreenWidth + x) * 3 + 2] = c[2];
-//          continue;
-//        }
       }
     }
     {
@@ -242,9 +165,9 @@ int main() {
       }
       cv.notify_one();
       out_capture.write(*buf);
-        const auto t2 = std::chrono::high_resolution_clock::now();
-        const auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-        std::cout << "Took " << dt << "ms\n";
+      const auto t2 = std::chrono::high_resolution_clock::now();
+      const auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+      std::cout << "Took " << dt << "ms\n";
       cv::imshow("Window", *buf);
     }
     key = cv::waitKeyEx(0);

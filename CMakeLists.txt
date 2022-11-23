@@ -89,5 +89,8 @@ bh_add_test(object_test include/blackhole/object/object_test.cc)
 bh_add_test(utility_test include/blackhole/utility_test.cc)
 bh_add_test(vector_object_test include/blackhole/object/vector_object_test.cc)
 bh_add_test(ray_tracer_test include/blackhole/ray_tracer_test.cc)
+bh_add_test(blackhole_solution_test include/blackhole/blackhole_solution_test.cc)
+#bh_add_test(multiple_blackhole_solution_test include/blackhole/multiple_blackhole_solution_test.cc)
+#bh_add_test(multiple_blackhole_solution_test2 include/blackhole/multiple_blackhole_solution_test2.cc)
 
 

@@ -94,8 +94,16 @@ class Object {
 
   const std::vector<point_type>& vertex() const { return vertex_; }
 
+#ifndef NDEBUG
   void name(std::string name) { name_ = std::move(name); }
   [[nodiscard]] const std::string& name() const { return name_; }
+#else
+  void name(const std::string&) {}
+  [[nodiscard]] const std::string& name() const {
+    static auto name_release = new std::string("Unnamed: Release build");
+    return *name_release;
+  }
+#endif
 
  protected:
   std::vector<point_type> vertex_ = {point_type(0, 0, 0)};
@@ -104,7 +112,9 @@ class Object {
   vector_type vx_ = {1, 0, 0};
   vector_type vy_ = {0, 1, 0};
   vector_type vz_ = {0, 0, 1};
+#ifndef NDEBUG
   std::string name_ = "Unnamed";
+#endif
 };
 
 template<typename T>

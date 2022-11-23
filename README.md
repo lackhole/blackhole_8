@@ -1,8 +1,8 @@
 # Blackhole v.8
 
-| 3D Ray Tracing                | Blackhole with normal objects | Blackhole with accretion disc |
-|:------------------------------|-------------------------------|:------------------------------|
-| ![aespa](output/3d_simul.gif) | ![aespa](output/aespa.gif)    | ![aespa](output/travel.gif)   |
+| 3D Ray Tracing                   | Blackhole with ordinary objects | Blackhole with a thin accretion disc |
+|:---------------------------------|---------------------------------|:-------------------------------------|
+| ![3d_simul](output/3d_simul.gif) | ![aespa](output/aespa.gif)      | ![travel](output/travel.gif)         |
 
 ## Requirements
 * C++ 17

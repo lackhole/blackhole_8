@@ -29,6 +29,9 @@
 #endif
 
 int main() {
+  namespace fs = std::filesystem;
+  namespace bh = blackhole;
+
   std::cout <<
             "W: move forward\n"
             "S: move backward\n"
@@ -44,15 +47,15 @@ int main() {
             "L: look right\n"
             "Press with shift: Move/Flip/Look faster\n";
 
-  constexpr const int kScreenWidth = 1600;
-  constexpr const int kScreenHeight = 900;
+  constexpr const int kScreenWidth = 1600 / 2;
+  constexpr const int kScreenHeight = 900 / 2;
 
   blackhole::Camera<double> camera(kScreenWidth, kScreenHeight, blackhole::pi / 2);
-  camera.MoveTo(-200, 120, 10);
+  camera.MoveTo(-400, 120, 100);
+  camera.RotateY(-bh::pi / 24);
+  camera.RotateZ(bh::pi / 12);
 
 
-  namespace fs = std::filesystem;
-  namespace bh = blackhole;
 
   const auto save_dir = bh::timed_output_dir();
   fs::create_directories(save_dir);
@@ -62,22 +65,25 @@ int main() {
   auto& manager = blackhole::ObjectManager<double>::GetInstance();
 
   auto id = manager.InsertObject<blackhole::Rectangle<double>>(
-    100, 253, 199,
-    100, 0, 199,
+    100, 120, 100,
+    100, 0, 100,
     100, 0, 0,
-    100, 253, 0
+    100, 120, 0
   );
   id.second->SetTexture(bh::resource_image("mooni.jpeg"));
   id.second->name("Mooni");
+  auto& obj_mooni = id.second;
 
   auto id2 = manager.InsertObject<blackhole::Rectangle<double>>(
-    100, 0, 300,
-    100, -200, 300,
-    100, -200, 0,
+    100, 0, 150,
+    100, -100, 150,
+    100, -100, 0,
     100, 0, 0
   );
   id2.second->SetTexture(bh::resource_image("karina.jpeg"));
   id2.second->name("Karina");
+  auto& obj_karina = id2.second;
+  int karina_move_direction = 1;
 
   auto id3 = manager.InsertObject<blackhole::Rectangle<double>>(
     -100, 50, 100,
@@ -87,6 +93,7 @@ int main() {
   );
   id3.second->SetTexture(bh::resource_image("winter.jpg"));
   id3.second->name("Winter");
+  auto& obj_winter = id3.second;
 
   manager.InsertObject<blackhole::InfinitePlane<double>>(cv::Vec3d(0,0,0), blackhole::ChessPattern2D<double>{10});
 
@@ -177,7 +184,7 @@ int main() {
       std::cout << "Took " << dt << "ms\n";
       cv::imshow("Window", *buf);
     }
-    key = cv::waitKeyEx(0);
+    key = cv::waitKeyEx(1);
     kGOTO_LOOP_END:;
     if (key == blackhole::kEscape)
       break;
@@ -227,6 +234,31 @@ int main() {
       case '+': camera.fov(camera.fov() + blackhole::pi / 54); break;
     }
 
+    // Movement test
+    obj_karina->MoveX(3 * karina_move_direction);
+    if (auto x = obj_karina->position()[0]; x > 100)
+      karina_move_direction = -1;
+    else if (x < 0)
+      karina_move_direction = 1;
+
+    {
+      const auto y = -120.0; // obj_mooni->position()[1];
+      const auto z = -100.0; // obj_mooni->position()[2];
+      obj_mooni->MoveY(-y / 2);
+      obj_mooni->MoveZ(-z / 2);
+      obj_mooni->RotateX(bh::pi / 180);
+      obj_mooni->MoveY(y / 2);
+      obj_mooni->MoveZ(z / 2);
+    }
+    {
+      const auto x = 100.0;
+      const auto z = -100.0;
+      obj_winter->MoveX(-x);
+      obj_winter->MoveZ(-z / 2);
+      obj_winter->RotateY(bh::pi / 120);
+      obj_winter->MoveX(x);
+      obj_winter->MoveZ(z / 2);
+    }
   }
 
   {

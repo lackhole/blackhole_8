@@ -10,6 +10,8 @@
 #include <thread>
 #include <condition_variable>
 
+#include "opencv2/opencv.hpp"
+
 #include "blackhole/camera.h"
 #include "blackhole/config.h"
 #include "blackhole/cv_key.h"
@@ -17,8 +19,6 @@
 #include "blackhole/object/object_manager.h"
 #include "blackhole/ray_tracer.h"
 #include "blackhole/blackhole_solution.h"
-
-#include "opencv2/opencv.hpp"
 
 #if defined(BH_USE_OPENCL)
 #if defined(__APPLE__) || defined(__MACOSX)
@@ -33,6 +33,17 @@ void btncbf(int event, int x, int y, int flags, void* userdata) {
   if (event == cv::EVENT_LBUTTONDOWN) {
     std::cout << x << ", " << y << '\n';
   }
+}
+
+template<typename T>
+static auto normalize(const T& v) {
+  const auto size = cv::norm(v);
+  return v * (1.0 / size);
+}
+
+template<typename T, int n>
+T size(const cv::Vec<T, n>& v) {
+  return std::sqrt(v.dot(v));
 }
 
 int main() {
@@ -73,46 +84,46 @@ int main() {
 
   auto& manager = blackhole::ObjectManager<value_type>::GetInstance();
 
-//  auto id = manager.InsertObject<blackhole::Rectangle>(
-//    100, 253, 199,
-//    100, 0, 199,
-//    100, 0, 0,
-//    100, 253, 0
-//  );
-//  id.second->SetTexture(bh::resource_image("mooni.jpeg"));
-//  id.second->name("Mooni");
-//
-//  auto id2 = manager.InsertObject<blackhole::Rectangle>(
-//    500, 200, 300,
-//    500, 0, 300,
-//    500, 0, 0,
-//    500, 200, 0
-//  );
-//  id2.second->SetTexture(bh::resource_image("karina.jpeg"));
-//  id2.second->name("Karina");
-//
-//  auto id3 = manager.InsertObject<blackhole::Rectangle>(
-//    500, 0, 100,
-//    500, -100, 100,
-//    500, -100, 0,
-//    500, 0, 0
-//  );
-//  id3.second->SetTexture(bh::resource_image("winter.jpg"));
-//  id3.second->name("Winter");
-
-  auto id_acc_disc = manager.InsertObject<blackhole::Annulus>(
-    point_type{1000, 1000, 0},
-    point_type{-1000, 1000, 0},
-    point_type{-1000, -0100, 0},
-    point_type{1000, -1000, 0},
-    1000,
-    100
+  auto id = manager.InsertObject<blackhole::Rectangle>(
+    100, 253, 199,
+    100, 0, 199,
+    100, 0, 0,
+    100, 253, 0
   );
-  id_acc_disc.second->SetTexture(bh::resource_image("acc_disc.png"));
-  id_acc_disc.second->name("Accretion Disc");
+  id.second->SetTexture(bh::resource_image("mooni.jpeg"));
+  id.second->name("Mooni");
+
+  auto id2 = manager.InsertObject<blackhole::Rectangle>(
+    500, 200, 300,
+    500, 0, 300,
+    500, 0, 0,
+    500, 200, 0
+  );
+  id2.second->SetTexture(bh::resource_image("karina.jpeg"));
+  id2.second->name("Karina");
+
+  auto id3 = manager.InsertObject<blackhole::Rectangle>(
+    500, 0, 100,
+    500, -100, 100,
+    500, -100, 0,
+    500, 0, 0
+  );
+  id3.second->SetTexture(bh::resource_image("winter.jpg"));
+  id3.second->name("Winter");
+
+//  auto id_acc_disc = manager.InsertObject<blackhole::Annulus>(
+//    point_type{1000, 1000, 0},
+//    point_type{-1000, 1000, 0},
+//    point_type{-1000, -0100, 0},
+//    point_type{1000, -1000, 0},
+//    1000,
+//    100
+//  );
+//  id_acc_disc.second->SetTexture(bh::resource_image("acc_disc.png"));
+//  id_acc_disc.second->name("Accretion Disc");
 
 
-//  manager.InsertObject<blackhole::InfinitePlane>(vector_type(0,0,0), blackhole::ChessPattern2D<value_type>{100}).second->name("Chess");
+  manager.InsertObject<blackhole::InfinitePlane>(vector_type(0,0,0), blackhole::ChessPattern2D<value_type>{100}).second->name("Chess");
 
   cv::Mat screen1(kScreenHeight, kScreenWidth, CV_8UC3);
   cv::Mat screen2(kScreenHeight, kScreenWidth, CV_8UC3);
@@ -150,6 +161,7 @@ int main() {
 
 
   int key;
+  double bunmo = 1.0;
   for (;;) {
     const auto t1 = std::chrono::high_resolution_clock::now();
     {
@@ -161,6 +173,9 @@ int main() {
     const auto fv = camera.focus_vector();
     for (int x = 0; x < kScreenWidth; ++x) {
       for (int y = 0; y < kScreenHeight; ++y) {
+        if (x == 293 && y == 460)
+          bool stop = true;
+
         const auto pv = camera.PixelVector(x, y, fv) - blackhole.position();
         const auto F = camera.focus() - blackhole.position();
 
@@ -179,126 +194,123 @@ int main() {
         auto convertedCameraFocus = matrix_conversion * F;
         auto convertedPixel = matrix_conversion * pv;
 
-        const auto b = convertedCameraFocus[2];
+        auto b = convertedCameraFocus[2];
         value_type sol = -1;
         if (b >= blackhole.b_c()) {
           sol = blackhole.SolveG(b);
         }
-        const auto periapsis = b < blackhole.b_c() ? 0.156 * blackhole.mass() / b : sol;
+        const value_type periapsis_u = b > blackhole.b_c() ? sol : (0.156 * blackhole.mass() / b);
+        const value_type periapsis_r = 1.0 / periapsis_u;
+        const value_type periapsis_r_safe = periapsis_r + (blackhole.mass() * 0.0001); // TODO: Use dynamic based on the mass
+        const value_type periapsis_u_safe = 1.0 / periapsis_r_safe;
+
         auto r0 = std::sqrt(convertedCameraFocus.dot(convertedCameraFocus));
 
         value_type phi = atan(convertedCameraFocus[2] / convertedCameraFocus[1]);
-        value_type u = 1. / r0;
-        value_type dphi = 0;
-        value_type dphi_prev = blackhole.InvSqrtG(u, b);
         value_type r = r0;
 
-        const value_type integrate_begin = u;
-        const value_type integrate_end = periapsis;
+        // TODO: Use dynamic step size
+        value_type dr = blackhole.mass();
 
-        int nstep = 20;
-        int nstep_safe = nstep - 1;
-        value_type du = (integrate_end - integrate_begin) * (1.0 / nstep);
-        value_type du_h = du / 2.;
-        const value_type b_invsq = 1. / (b * b);
-
-        auto light_vector = convertedCameraFocus;
-        auto light_vector_prev = convertedCameraFocus;
+        auto light_pos = convertedCameraFocus; // light_pos_prev + light_vector * dr;
         point_type light_vector_original = camera.focus();
         point_type light_vector_prev_original = camera.focus();
 
-        point_type inter;
         auto color_dst = screen->data + (y * kScreenWidth + x) * 3;
+        point_type inter;
 
-        // trapezoid integration
-        for (int i = 0; i < nstep_safe; ++i) {
-          u += du;
-          dphi = blackhole.InvSqrtG(u, b);
+        // Assume r0 > periapsis_r
+        for (int i = 0; i < 400; ++i) {
+          auto r1 = r; // size(light_pos);
+          auto r2 = r1 - dr;
 
-          phi += (dphi_prev + dphi) * du_h;
-          r = 1. / u;
+          if (r2 < periapsis_r_safe) {
+            if (sol == -1) {
+              color_dst[0] = 0;
+              color_dst[1] = 0;
+              color_dst[2] = 0;
+              break;
+            }
 
-          light_vector = { 0, r * cos(phi), r * sin(phi)};
-          light_vector_original = (matrix_reconversion * light_vector) + blackhole.position();
+//            r2 = periapsis_r_safe * 2 - r2;
+//            const value_type u1 = 1.0 / r1;
+//            const value_type u2 = 1.0 / r2;
+//
+//            if (const auto d = std::abs(u1 - periapsis_u_safe); d > 0.0001) {
+//              const auto f_u1 = blackhole.InvSqrtG((u1 + periapsis_u_safe) / 2, b);
+//              phi += f_u1 * d;
+//              u = periapsis_u_safe;
+//              r = 1.0 / u;
+//
+//              light_pos = {0, r * std::cos(phi), r * std::sin(phi)};
+//              light_vector_original = matrix_reconversion * light_pos + blackhole.position();
+//              if (const auto& obj = manager.FindCollision(light_vector_prev_original, light_vector_original, &inter); obj != nullptr) {
+//                const auto c = obj->color(inter);
+//                color_dst[0] = c[0];
+//                color_dst[1] = c[1];
+//                color_dst[2] = c[2];
+//                break;
+//              }
+//              light_vector_prev_original = light_vector_original;
+//            } else {
+//              color_dst[0] = 255;
+//              color_dst[1] = 0;
+//              color_dst[2] = 0;
+////              break;
+//            }
+//
+//            if (const auto d = std::abs(u2 - periapsis_u); d > 0.0001) {
+//              const auto f_u2 = blackhole.InvSqrtG((u2 + u1) / 2, b);
+//              phi += f_u2 * std::abs(u1 - u2);
+//              u = u2;
+//              r = 1.0 / u;
+//
+//              light_pos = {0, r * std::cos(phi), r * std::sin(phi)};
+//              light_vector_original = matrix_reconversion * light_pos + blackhole.position();
+//              if (const auto& obj = manager.FindCollision(light_vector_prev_original, light_vector_original, &inter);
+//                obj != nullptr) {
+//                const auto c = obj->color(inter);
+//                color_dst[0] = c[0];
+//                color_dst[1] = c[1];
+//                color_dst[2] = c[2];
+//                break;
+//              }
+//              light_vector_prev_original = light_vector_original;
+//            } else {
+//              color_dst[0] = 0;
+//              color_dst[1] = 255;
+//              color_dst[2] = 0;
+////              break;
+//            }
 
-          dphi_prev = dphi;
-
-          if (const auto& obj = manager.FindCollision(light_vector_prev_original, light_vector_original, &inter); obj != nullptr) {
-            const auto c = obj->color(inter);
-            color_dst[0] = c[0];
-            color_dst[1] = c[1];
-            color_dst[2] = c[2];
-            goto kGOTO_PIXEL_LOOP_END;
+            r2 = periapsis_r_safe;
+            dr = -dr;
           }
 
-          light_vector_prev = light_vector;
-          light_vector_prev_original = light_vector_original;
-        }
-        {
-          u += du * 0.9;
-          dphi = blackhole.InvSqrtG(u, b);
+          {
+            const value_type u1 = 1.0 / r1;
+            const value_type u2 = 1.0 / r2;
+            const auto du = u2 - u1;
 
-          phi += (dphi_prev + dphi) * du_h;
-          r = 1. / u;
+            const value_type f_u = blackhole.InvSqrtG((u1 + u2) / 2.0, b);
+            phi += f_u * std::abs(du);
+            r = r2;
 
-          light_vector = { 0, r * cos(phi), r * sin(phi)};
-          light_vector_original = matrix_reconversion * light_vector + blackhole.position();
+            light_pos = {0, r * std::cos(phi), r * std::sin(phi)};
+            light_vector_original = matrix_reconversion * light_pos + blackhole.position();
 
-          dphi_prev = dphi;
-
-          if (const auto& obj = manager.FindCollision(light_vector_prev_original, light_vector_original, &inter); obj != nullptr) {
-            const auto c = obj->color(inter);
-            color_dst[0] = c[0];
-            color_dst[1] = c[1];
-            color_dst[2] = c[2];
-            goto kGOTO_PIXEL_LOOP_END;
+            if (const auto& obj = manager.FindCollision(light_vector_prev_original, light_vector_original, &inter); obj != nullptr) {
+              const auto c = obj->color(inter);
+              color_dst[0] = c[0];
+              color_dst[1] = c[1];
+              color_dst[2] = c[2];
+              break;
+            }
+            light_vector_prev_original = light_vector_original;
           }
 
-          light_vector_prev = light_vector;
-          light_vector_prev_original = light_vector_original;
+
         }
-
-        if (sol < 0) {
-          if (const auto& obj = manager.FindCollision(light_vector_prev_original, blackhole.center(), &inter); obj != nullptr) {
-            const auto c = obj->color(inter);
-            color_dst[0] = c[0];
-            color_dst[1] = c[1];
-            color_dst[2] = c[2];
-          }
-          goto kGOTO_PIXEL_LOOP_END;
-        }
-        {
-          const value_type integrate_begin_2 = periapsis;
-          const value_type integrate_end_2 = (1.0 / r0) / 10.0;
-
-          du = (integrate_end_2 - integrate_begin_2) * (1.0 / nstep);
-          du_h = -du / 2;
-        }
-        for (int i = 0; i < nstep_safe; ++i) {
-          u += du;
-          dphi = blackhole.InvSqrtG(u, b);
-
-          phi += (dphi_prev + dphi) * du_h;
-          r = 1. / u;
-
-          light_vector = { 0, r * cos(phi), r * sin(phi)};
-          light_vector_original = matrix_reconversion * light_vector + blackhole.position();
-
-          if (const auto& obj = manager.FindCollision(light_vector_prev_original, light_vector_original, &inter); obj != nullptr) {
-            const auto c = obj->color(inter);
-            color_dst[0] = c[0];
-            color_dst[1] = c[1];
-            color_dst[2] = c[2];
-            goto kGOTO_PIXEL_LOOP_END;
-          }
-
-          dphi_prev = dphi;
-
-          light_vector_prev = light_vector;
-          light_vector_prev_original = light_vector_original;
-        }
-
-        kGOTO_PIXEL_LOOP_END:;
 
 #ifndef NDEBUG
         if (x % 33 == 32 && y % 33 == 32) {
@@ -341,13 +353,15 @@ int main() {
       cv::imshow("Window", *buf);
       cv::setMouseCallback("Window", btncbf, nullptr);
     }
-    key = cv::waitKeyEx(1);
+    key = cv::waitKeyEx(0);
+    if (key != -1)
+      std::cout << "Key: " << key << '(' << (char)key << ')' << '\n';
     kGOTO_LOOP_END:;
     if (key == blackhole::kEscape)
       break;
 
     const auto move_d = 10;
-    const auto rotate_d = blackhole::pi / 1800.0;
+    const auto rotate_d = blackhole::pi / 180.0;
     const auto faster = 10;
 //    blackhole.MoveZ(10);
 //
@@ -398,6 +412,11 @@ int main() {
       case ',': blackhole.MoveX(5); break;
       case '.': blackhole.MoveX(-5); break;
 
+      case '1': bunmo += 0.01; break;
+      case '!': bunmo += 0.1; break;
+      case '2': bunmo -= 0.01; break;
+      case '@': bunmo -= 0.1; break;
+
 //      case '1': id_acc_disc.second->RotateX(rotate_d); break;
 //      case '!': id_acc_disc.second->RotateX(-rotate_d); break;
 //
@@ -407,7 +426,7 @@ int main() {
 //      case '3': id_acc_disc.second->RotateZ(rotate_d); break;
 //      case '#': id_acc_disc.second->RotateZ(-rotate_d); break;
     }
-    id_acc_disc.second->RotateZ(blackhole::pi / 180);
+//    id_acc_disc.second->RotateZ(blackhole::pi / 180);
 
   }
 

@@ -142,9 +142,6 @@ int main() {
     const auto fv = camera.focus_vector();
     for (int x = 0; x < kScreenWidth; ++x) {
       for (int y = 0; y < kScreenHeight; ++y) {
-        if (x == 592 && y == 266)
-          bool debug = true;
-
         const auto pv = camera.PixelVector(x, y, fv) - blackhole.position();
         const auto F = camera.focus() - blackhole.position();
 

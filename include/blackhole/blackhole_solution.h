@@ -32,13 +32,12 @@ class StaticBlackhole : public DrawableObject<T> {
     return 1.0 / std::sqrt(G(u, b));
   }
 
-  value_type SolveG(value_type b) const {
-    static const int count = 20;
-    value_type l = 0.0 + epsilon<value_type>();
+  value_type SolveG(value_type b, int binary_search_count = 20) const {
+    value_type l = 0.0;
     value_type r = 1.0 / (3.0 * mass());
     value_type mid;
 
-    for (int i = 0; i < count; ++i) {
+    for (int i = 0; i < binary_search_count; ++i) {
       mid = (l + r) / 2.0;
 
       if (G(mid, b) > 0.0) {

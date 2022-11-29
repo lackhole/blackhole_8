@@ -7,6 +7,8 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
+option(USE_ROOT_PLOT "Use ROOT to draw plots" ON)
+
 set(ADDITIONAL_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/include")
 set(ADDITIONAL_LIBRARIES "")
 
@@ -89,6 +91,11 @@ macro(bh_add_exec name src)
     target_include_directories(${name} PUBLIC "${ADDITIONAL_INCLUDE_DIRS}")
 endmacro()
 
+if (USE_ROOT_PLOT)
+    add_subdirectory(third_party/root)
+    bh_add_test(plot_test include/blackhole/plot_test.cc)
+    target_link_libraries(plot_test PUBLIC root)
+endif()
 bh_add_test(matrix_test include/blackhole/matrix_test.cc)
 bh_add_exec(camera_test include/blackhole/camera_test.cc)
 bh_add_test(object_test include/blackhole/object/object_test.cc)
@@ -96,6 +103,7 @@ bh_add_test(utility_test include/blackhole/utility_test.cc)
 bh_add_test(vector_object_test include/blackhole/object/vector_object_test.cc)
 bh_add_test(ray_tracer_test include/blackhole/ray_tracer_test.cc)
 bh_add_test(blackhole_solution_test include/blackhole/blackhole_solution_test.cc)
+bh_add_test(blackhole_solution_numerical_test include/blackhole/blackhole_solution_numerical_test.cc)
 #bh_add_test(multiple_blackhole_solution_test include/blackhole/multiple_blackhole_solution_test.cc)
 #bh_add_test(multiple_blackhole_solution_test2 include/blackhole/multiple_blackhole_solution_test2.cc)
 

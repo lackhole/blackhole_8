@@ -47,8 +47,8 @@ int main() {
             "L: look right\n"
             "Press with shift: Move/Flip/Look faster\n";
 
-  constexpr const int kScreenWidth = 1600 / 2;
-  constexpr const int kScreenHeight = 900 / 2;
+  constexpr const int kScreenWidth = 1600; // / 2;
+  constexpr const int kScreenHeight = 900; // / 2;
 
   blackhole::Camera<double> camera(kScreenWidth, kScreenHeight, blackhole::pi / 2);
   camera.MoveTo(-400, 120, 100);
@@ -127,6 +127,7 @@ int main() {
     }
   });
 
+  std::vector<std::thread> threads(10);
 
   int key;
   for (;;) {
@@ -138,21 +139,45 @@ int main() {
 
 
     const auto fv = camera.focus_vector();
-    for (int x = 0; x < kScreenWidth; ++x) {
-      for (int y = 0; y < kScreenHeight; ++y) {
-        blackhole::RayTracer ray_tracer(camera.focus(), camera.PixelVector(x, y, fv));
+    for (int i = 0; i < threads.size(); ++i) {
+      threads[i] = std::thread([&](int x1, int x2) {
+        for(int x = x1; x < x2; ++x) {
+          for (int y = 0; y < kScreenHeight; ++y) {
+            blackhole::RayTracer ray_tracer(camera.focus(), camera.PixelVector(x, y, fv));
 
-        const auto b = ray_tracer.Prograde(manager, screen->data + (y * kScreenWidth + x) * 3, 10);
-#ifndef NDEBUG
-        if (x % 100 == 99 && y % 100 == 99) {
-          cv::imshow("Window", *screen);
-          key = cv::waitKey(1);
-          if (key != -1) goto kGOTO_LOOP_END;
+            const auto b = ray_tracer.Prograde(manager, screen->data + (y * kScreenWidth + x) * 3, 10);
+//#ifndef NDEBUG
+//           if (x % 100 == 99 && y % 100 == 99) {
+//cv::imshow("Window", *screen);
+//key = cv::waitKey(1);
+//if (key != -1) goto kGOTO_LOOP_END;
+//}
+//#endif
+//           if (b) continue;
+          }
         }
-#endif
-        if (b) continue;
-      }
+      }, i * (kScreenWidth / threads.size()),
+         (i + 1) * (kScreenWidth / threads.size()));
     }
+
+    for (auto& th : threads)
+      if (th.joinable())
+        th.join();
+//    for (int x = 0; x < kScreenWidth; ++x) {
+//      for (int y = 0; y < kScreenHeight; ++y) {
+//        blackhole::RayTracer ray_tracer(camera.focus(), camera.PixelVector(x, y, fv));
+//
+//        const auto b = ray_tracer.Prograde(manager, screen->data + (y * kScreenWidth + x) * 3, 10);
+//#ifndef NDEBUG
+//        if (x % 100 == 99 && y % 100 == 99) {
+//          cv::imshow("Window", *screen);
+//          key = cv::waitKey(1);
+//          if (key != -1) goto kGOTO_LOOP_END;
+//        }
+//#endif
+//        if (b) continue;
+//      }
+//    }
     {
       std::stringstream ss;
       ss << camera.focus();

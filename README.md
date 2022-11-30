@@ -7,6 +7,8 @@
 | Blackhole with a thin accretion disc | With disc and a background                                |
 |:-------------------------------------|:----------------------------------------------------------|
 | ![travel](output/travel.gif)         | ![disc_and_background](output/disc_and_background.gif)    |
+#### Full Video at [YouTube](https://www.youtube.com/channel/UCc4TIUDXIz1nJD0Xs1_iwUQ)
+
 
 ## Requirements
 * C++ 17
